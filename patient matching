@@ -1,0 +1,30 @@
+app/main.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"message": "Klinixa AI is running"}
+def match_patient_to_trial(patient, trial):
+    return {
+        "age_match": trial["min_age"] <= patient["age"] <= trial["max_age"],
+        "condition_match": trial["condition"] in patient["conditions"]
+    }
+def calculate_score(results):
+    total = len(results)
+    matched = sum(1 for v in results.values() if v)
+    return int((matched / total) * 100)
+import streamlit as st
+
+st.title("Klinixa AI – Trial Matching")
+
+age = st.slider("Age", 0, 100, 30)
+condition = st.text_input("Condition", "diabetes")
+
+if st.button("Simulate Match"):
+    st.write("Match Score: 85")
+    st.write("Reason: Meets primary eligibility criteria")
+git clone <your-repo-url>
+cd klinixa-trial-matching-ai
+pip install fastapi uvicorn streamlit
