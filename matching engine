@@ -1,0 +1,84 @@
+# =========================
+# Patient Matching Engine
+# Girish Rajeev
+# 03/2019
+# =========================
+
+from fastapi import FastAPI
+from app.matching_engine import match_patient_to_trial
+from app.scoring import calculate_score
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"message": "Klinixa AI is running"}
+
+@app.post("/match")
+def match(data: dict):
+    patient = data.get("patient")
+    trial = data.get("trial")
+
+    results = match_patient_to_trial(patient, trial)
+    score = calculate_score(results)
+
+    return {
+        "match_score": score,
+        "details": results
+    }
+
+
+# =========================
+# FILE: app/matching_engine.py
+# =========================
+
+def match_patient_to_trial(patient, trial):
+    return {
+        "age_match": trial["min_age"] <= patient["age"] <= trial["max_age"],
+        "condition_match": trial["condition"] in patient["conditions"]
+    }
+
+
+# =========================
+# FILE: app/scoring.py
+# =========================
+
+def calculate_score(results):
+    total = len(results)
+    matched = sum(1 for v in results.values() if v)
+    return int((matched / total) * 100)
+
+
+# =========================
+# FILE: ui/app.py
+# =========================
+
+import streamlit as st
+import requests
+
+st.title("Klinixa AI – Trial Matching")
+
+age = st.slider("Age", 0, 100, 30)
+condition = st.text_input("Condition", "diabetes")
+
+if st.button("Find Match"):
+    patient = {
+        "age": age,
+        "conditions": [condition]
+    }
+
+    trial = {
+        "min_age": 18,
+        "max_age": 65,
+        "condition": "diabetes"
+    }
+
+    response = requests.post("http://localhost:8000/match", json={
+        "patient": patient,
+        "trial": trial
+    })
+
+    result = response.json()
+
+    st.write("Match Score:", result["match_score"])
+    st.write("Details:", result["details"])
